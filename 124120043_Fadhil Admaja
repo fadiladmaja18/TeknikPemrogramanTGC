@@ -1,0 +1,42 @@
+class Sensor:
+    def __init__(self, id_sensor, lokasi, jenis):
+        self.id_sensor = id_sensor
+        self.lokasi = lokasi
+        self.jenis = jenis
+    
+    def info(self):
+        return f"Sensor ID: {self.id_sensor}, Lokasi: {self.lokasi}, Jenis: {self.jenis}"
+
+
+class SensorSeismik(Sensor):
+    def __init__(self, id_sensor, lokasi, jenis, frekuensi_sampling):
+        super().__init__(id_sensor, lokasi, jenis)
+        self.frekuensi_sampling = frekuensi_sampling  
+    
+    def jumlah_sampel(self, durasi):
+        """
+        Menghitung jumlah sampel data amplitudo berdasarkan durasi pencatatan
+        
+        Parameters:
+        durasi (float): Durasi pencatatan dalam detik
+        
+        Returns:
+        int: Jumlah sampel data amplitudo
+        """
+        return int(self.frekuensi_sampling * durasi)
+    
+    def info(self):
+        return f"{super().info()}, Frekuensi Sampling: {self.frekuensi_sampling} Hz"
+
+if __name__ == "__main__":
+    sensor1 = Sensor("S001", "Gunung Merapi", "Suhu")
+    print(sensor1.info())
+    sensor_seismik = SensorSeismik("SS001", "Patahan Lembang", "Seismik", 100)
+    print(sensor_seismik.info())
+    durasi = 10  
+    jumlah_sampel = sensor_seismik.jumlah_sampel(durasi)
+    print(f"Jumlah sampel untuk {durasi} detik: {jumlah_sampel} data amplitudo")
+
+    sensor_seismik2 = SensorSeismik("SS002", "Laut Jawa", "Seismik Bawah Laut", 200)
+    print(f"\n{sensor_seismik2.info()}")
+    print(f"Jumlah sampel untuk 5 detik: {sensor_seismik2.jumlah_sampel(5)} data amplitudo")
