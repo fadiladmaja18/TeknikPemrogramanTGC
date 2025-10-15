@@ -1,0 +1,79 @@
+
+data = [
+    ['shot', 'receiver', 'twt'],  # Header
+    [0, 100, 200],
+    [0, 200, 350],
+    [0, 300, 480],
+    [0, 400, 600]
+]
+print("Data awal:")
+for row in data:
+    print(row)
+print("\n")
+
+
+normalized_data = None
+try:
+    # Validasi kolom 'twt' ada (index 2 di header)
+    if len(data) < 1 or len(data[0]) < 3 or data[0][2] != 'twt':
+        raise ValueError("Kolom 'twt' tidak ditemukan dalam data.")
+    
+    # Ekstrak dan validasi nilai twt (skip header, konversi ke float)
+    twt_values = []
+    for i, row in enumerate(data[1:], start=1):
+        try:
+            twt = float(row[2])
+            twt_values.append(twt)
+        except (ValueError, TypeError, IndexError):
+            raise ValueError(f"Data 'twt' non-numerik atau hilang di baris {i}: {row}")
+    
+    if not twt_values:
+        raise ValueError("Tidak ada data 'twt' yang valid.")
+    twt_min = min(twt_values)
+    twt_max = 600  # Sesuai rumus
+    twt_max_data = max(twt_values)
+    
+    if twt_max_data > twt_max:
+        print(f"Peringatan: twt_max dari data ({twt_max_data}) > 600. Menggunakan 600 untuk normalisasi.")
+    
+    denominator = twt_max - twt_min
+    if denominator == 0:
+        raise ValueError("Denominator nol (twt_max == twt_min). Normalisasi tidak mungkin dilakukan.")
+    
+    header = data[0] + ['twt_norm']
+    normalized_data = [header]
+    
+    for row in data:
+        twt = float(row[2])
+        twt_norm = (twt - twt_min) / denominator
+        new_row = row + [twt_norm]
+        normalized_data.append(new_row)
+    
+    print("=== Data Setelah Normalisasi ===")
+    for row in normalized_data:
+        print(','.join(map(str, row)))
+    print("\n")
+    
+except ValueError as e:
+    print(f"Error pada proses normalisasi: {e}")
+    normalized_data = None
+except Exception as e:
+    print(f"Error tak terduga: {e}")
+    normalized_data = None
+    
+if normalized_data is not None:
+    output_file = 'normalized_data.csv'
+    try:
+        with open(output_file, 'w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerows(normalized_data)
+        
+        print(f"=== Penyimpanan Berhasil ===")
+        print(f"Data disimpan ke file: {output_file}")
+        print("Preview isi file:")
+        with open(output_file, 'r', encoding='utf-8') as file:
+            print(file.read())
+    except IOError as e:
+        print(f"Error saat menyimpan file: {e}")
+else:
+    print("Penyimpanan dibatalkan karena error pada normalisasi.")
