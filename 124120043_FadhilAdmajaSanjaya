@@ -1,0 +1,45 @@
+# 🪐 Challenge: Analisis Data Mikrogravitasi
+# Integrasi Pandas, NumPy, SciPy, dan Matplotlib
+# Penulis  : Fadhil admaja sanjaya
+# Proyek   : Eksplorasi Anomali Gravitasi
+
+# Tampilkan 5 data teratas
+print("📊 Data awal:")
+print(data.head())
+
+print("\n🔍 Info data:")
+print(data.info())
+
+# Hapus baris kosong jika ada
+data = data.dropna()
+
+x = data['X'].values
+y = data['Y'].values
+z = data['Anomali_Gravitasi_mGal'].values
+
+grid_x, grid_y = np.mgrid[min(x):max(x):200j, min(y):max(y):200j]
+grid_z = griddata((x, y), z, (grid_x, grid_y), method='linear')
+
+plt.figure(figsize=(10, 8))
+contour = plt.contourf(grid_x, grid_y, grid_z, levels=30, cmap='seismic')
+plt.colorbar(contour, label='Anomali Gravitasi (mGal)')
+plt.scatter(x, y, c='black', s=5, alpha=0.6, label='Titik Data')
+plt.title('Peta Kontur Anomali Gravitasi Bouguer')
+plt.xlabel('Koordinat Timur (m)')
+plt.ylabel('Koordinat Utara (m)')
+plt.legend()
+plt.show()
+
+mean_anom = np.mean(z)
+max_anom = np.max(z)
+min_anom = np.min(z)
+
+print("\n📈 Statistik Anomali Gravitasi:")
+print(f"Rata-rata : {mean_anom:.2f} mGal")
+print(f"Nilai Maksimum (anomali positif) : {max_anom:.2f} mGal")
+print(f"Nilai Minimum (anomali negatif) : {min_anom:.2f} mGal")
+
+print("\n🧠 Interpretasi Awal:")
+print("- Nilai anomali positif menunjukkan kemungkinan batuan padat atau bijih logam.")
+print("- Nilai anomali negatif mengindikasikan material ringan seperti rongga atau sedimen.")
+print("- Lihat peta kontur untuk memperkirakan pola dan posisi anomali signifikan.")
