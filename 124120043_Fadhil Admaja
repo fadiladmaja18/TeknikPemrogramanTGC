@@ -1,0 +1,321 @@
+#minggu 14
+
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import griddata
+
+# --- Konfigurasi Halaman Streamlit ---
+st.set_page_config(layout="wide", page_title="Magnetic Anomaly Plotter Challenge")
+
+st.title("Challenge: Magnetic Anomaly Plotter (Streamlit)")
+
+data_content = """
+1.23,52.10,45005.12
+51.45,49.88,45009.34
+102.10,50.55,45013.78
+148.90,48.20,45018.12
+201.30,51.15,45022.45
+249.50,50.90,45026.89
+302.10,49.45,45031.23
+351.80,51.60,45036.56
+398.20,50.10,45041.89
+452.40,49.90,45048.23
+501.10,52.30,45055.67
+548.90,50.40,45062.12
+602.30,51.20,45065.45
+651.50,49.80,45068.78
+702.10,50.15,45070.12
+751.40,51.10,45072.34
+801.20,49.90,45074.56
+849.80,50.30,45076.89
+901.50,51.40,45078.12
+952.10,49.70,45080.45
+1001.20,50.90,45082.67
+2.15,151.30,45015.45
+49.80,149.50,45019.67
+101.20,150.80,45023.90
+152.40,151.20,45028.12
+199.10,149.90,45032.56
+251.30,150.40,45037.89
+300.50,151.10,45043.23
+352.10,149.60,45049.56
+399.40,150.90,45058.12
+451.20,151.30,45070.45
+502.50,149.80,45085.67
+549.10,150.50,45095.89
+601.40,151.00,45098.12
+652.30,149.40,45095.34
+699.80,150.70,45088.56
+751.20,151.50,45082.78
+800.40,149.90,45078.90
+851.10,150.30,45076.12
+900.20,151.40,45075.45
+951.50,149.70,45076.67
+1002.10,150.20,45078.90
+4.50,250.10,45025.12
+52.10,248.90,45029.34
+98.70,251.20,45034.56
+151.20,249.50,45039.78
+202.40,250.80,45046.12
+248.90,251.40,45054.34
+301.20,249.10,45065.56
+350.50,250.70,45080.78
+402.10,251.30,45105.12
+451.40,249.80,45145.45
+499.80,250.90,45190.67
+552.10,251.50,45210.89
+600.30,249.40,45195.12
+648.70,250.60,45155.34
+701.50,251.10,45120.56
+750.20,249.70,45100.78
+801.40,250.30,45090.90
+852.10,251.80,45085.12
+899.50,249.20,45082.45
+948.80,250.50,45081.67
+1001.30,251.00,45082.90
+3.10,349.50,45035.12
+50.20,351.20,45040.34
+101.50,349.80,45046.56
+149.80,350.40,45053.78
+200.10,351.10,45062.12
+252.30,349.70,45075.34
+298.90,350.90,45095.56
+351.40,351.30,45130.78
+400.20,349.60,45190.12
+452.50,350.80,45280.45
+501.10,351.50,45350.67
+549.40,349.90,45320.89
+600.50,350.20,45240.12
+651.20,351.40,45160.34
+702.30,349.50,45115.56
+749.80,350.70,45095.78
+800.10,351.10,45088.90
+851.50,349.80,45085.12
+902.40,350.30,45083.45
+950.20,351.60,45084.67
+1000.50,349.90,45086.90
+1.50,450.80,45045.12
+51.20,449.50,45051.34
+99.80,451.10,45058.56
+150.40,449.90,45068.78
+201.50,450.50,45085.12
+249.20,451.20,45110.34
+300.80,449.60,45160.56
+351.10,450.90,45250.78
+402.50,451.40,45400.12
+450.80,449.80,45600.45
+501.20,450.30,45750.67
+548.50,451.50,45650.89
+602.10,449.70,45420.12
+650.40,450.60,45200.34
+701.80,451.20,45120.56
+752.50,449.50,45098.78
+799.20,450.80,45090.90
+850.50,451.30,45088.12
+901.10,449.60,45088.45
+949.40,450.20,45090.67
+1001.80,451.10,45093.90
+2.80,551.50,45055.12
+50.50,549.20,45062.34
+101.80,550.80,45070.56
+149.50,551.40,45082.78
+200.20,549.90,45105.12
+251.60,550.50,45145.34
+302.40,551.20,45220.56
+349.80,549.60,45350.78
+401.10,550.90,45550.12
+452.30,551.50,45780.45
+500.50,549.80,45850.67
+549.20,550.40,45700.89
+601.50,551.10,45450.12
+652.80,549.50,45250.34
+700.40,550.70,45150.56
+751.10,551.30,45110.78
+802.50,549.90,45098.90
+850.20,550.20,45094.12
+900.80,551.60,45094.45
+951.40,549.80,45096.67
+1000.10,550.30,45099.90
+"""
+from io import StringIO
+data = pd.read_csv(StringIO(data_content), header=None, names=['x', 'y', 't_obs'])
+data['t_obs'] = data['t_obs'] - 45000 # Normalisasi nilai anomali agar lebih kecil
+
+# Data untuk grid interpolasi
+X = data['x'].values
+Y = data['y'].values
+Z_obs = data['t_obs'].values
+points = np.column_stack((X, Y))
+
+# Grid untuk interpolasi
+x_min, x_max = X.min(), X.max()
+y_min, y_max = Y.min(), Y.max()
+grid_x, grid_y = np.mgrid[x_min:x_max:100j, y_min:y_max:100j]
+
+# --- Fungsi Interpolasi dan Plotting ---
+@st.cache_data
+def calculate_maps(Z_data):
+    # Interpolasi data ke grid (Observed/Regional/Residual)
+    Z_grid = griddata(points, Z_data, (grid_x, grid_y), method='linear')
+
+    from scipy.ndimage import gaussian_filter
+    Z_regional = gaussian_filter(Z_grid, sigma=20) 
+    
+    # Residual = Observed - Regional
+    Z_residual = Z_grid - Z_regional
+    
+    return Z_grid, Z_regional, Z_residual
+
+# Hitung peta dasar
+Z_obs_grid, Z_regional_grid, Z_residual_grid = calculate_maps(Z_obs)
+
+def plot_magnetic_map(grid_data, title, colormap, vmin_val, vmax_val):
+    fig, ax = plt.subplots(figsize=(6, 6))
+    
+    # Plot kontur terisi (pcolor/contourf)
+    if vmin_val is not None and vmax_val is not None:
+        # Plot dengan batas vmin/vmax yang ditentukan
+        c = ax.pcolormesh(grid_x, grid_y, grid_data.T, cmap=colormap, 
+                          vmin=vmin_val, vmax=vmax_val, shading='auto')
+    else:
+        # Plot dengan batas otomatis
+        c = ax.pcolormesh(grid_x, grid_y, grid_data.T, cmap=colormap, shading='auto')
+
+    ax.set_title(title)
+    ax.set_xlabel('X Coordinate')
+    ax.set_ylabel('Y Coordinate')
+    ax.axis('tight')
+    
+    # Tambahkan Colorbar
+    fig.colorbar(c, ax=ax, orientation='vertical', label='Anomali (nT)')
+    
+    st.pyplot(fig)
+    plt.close(fig)
+
+
+# --- Sidebar Kontrol (Challenge 1, 2, 3) ---
+with st.sidebar:
+    st.header("⚙️ Pengaturan Plot")
+    
+    # 1. Tambahkan pilihan colormap (cmap)
+    st.subheader("1. Pilihan Colormap")
+    available_cmaps = ['viridis', 'plasma', 'inferno', 'magma', 'cividis', 'RdYlBu', 'jet', 'gray']
+    selected_cmap = st.selectbox("Pilih Colormap (cmap):", available_cmaps, index=0)
+    
+    # 3. Tambahkan opsi Auto Scale dan Manual Scale
+    st.subheader("3. Opsi Scaling")
+    scale_mode = st.radio("Pilih Mode Skala:", ["Auto Scale", "Manual Scale"])
+    
+    vmin_val = None
+    vmax_val = None
+
+    # 2. Tambahkan kontrol vmin dan vmax (hanya jika Manual Scale)
+    st.subheader("2. Kontrol vmin & vmax")
+    if scale_mode == "Manual Scale":
+        # Tentukan rentang slider berdasarkan data keseluruhan
+        z_min_global = Z_obs_grid.min()
+        z_max_global = Z_obs_grid.max()
+
+        vmin_val = st.slider("Nilai Minimum (vmin)", 
+                             min_value=z_min_global, 
+                             max_value=z_max_global, 
+                             value=z_min_global, 
+                             step=(z_max_global - z_min_global) / 100)
+        
+        vmax_val = st.slider("Nilai Maksimum (vmax)", 
+                             min_value=z_min_global, 
+                             max_value=z_max_global, 
+                             value=z_max_global, 
+                             step=(z_max_global - z_min_global) / 100)
+        
+        if vmin_val >= vmax_val:
+            st.error("vmin harus lebih kecil dari vmax.")
+            # Set nilai default jika error
+            vmin_val = z_min_global
+            vmax_val = z_max_global
+    else:
+        # Jika Auto Scale, tampilkan placeholder
+        st.info("Mode Auto Scale aktif: vmin/vmax dihitung otomatis.")
+
+    # 4. Tambahkan opsi tambahan (Pilih salah satu)
+    st.header("4. Opsi Tambahan (Pilih salah satu)")
+    st.info("Saya memilih opsi **'Opsi menyimpan plot sebagai gambar'**")
+    
+    # Opsi menyimpan plot sebagai gambar (diterapkan di fungsi plotting)
+    
+# --- Tampilkan Plot (Challenge 1, 2, 3) ---
+st.header("🗺️ Peta Anomali Magnetik")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    plot_magnetic_map(Z_obs_grid, 
+                      f"Anomali Magnetik **Observasi**\n(cmap: {selected_cmap})", 
+                      selected_cmap, vmin_val, vmax_val)
+    
+
+with col2:
+    plot_magnetic_map(Z_regional_grid, 
+                      f"Anomali Magnetik **Regional**\n(cmap: {selected_cmap})", 
+                      selected_cmap, vmin_val, vmax_val)
+
+with col3:
+    plot_magnetic_map(Z_residual_grid, 
+                      f"Anomali Magnetik **Residual**\n(cmap: {selected_cmap})", 
+                      selected_cmap, vmin_val, vmax_val)
+
+
+def create_download_figure(grid_data, title, colormap, vmin_val, vmax_val):
+    """Membuat dan mengembalikan objek figure Matplotlib untuk di-download."""
+    fig, ax = plt.subplots(figsize=(8, 8))
+    
+    if vmin_val is not None and vmax_val is not None:
+        c = ax.pcolormesh(grid_x, grid_y, grid_data.T, cmap=colormap, 
+                          vmin=vmin_val, vmax=vmax_val, shading='auto')
+    else:
+        c = ax.pcolormesh(grid_x, grid_y, grid_data.T, cmap=colormap, shading='auto')
+        
+    ax.set_title(title, fontsize=14)
+    ax.set_xlabel('X Coordinate', fontsize=12)
+    ax.set_ylabel('Y Coordinate', fontsize=12)
+    ax.axis('tight')
+    fig.colorbar(c, ax=ax, orientation='vertical', label='Anomali (nT)')
+    return fig
+
+st.subheader("Opsi Tambahan (Challenge 4: Menyimpan Plot)")
+plot_choice = st.selectbox("Pilih Plot yang Ingin Di-Download:", 
+                           ["Observasi", "Regional", "Residual"])
+
+data_to_save = Z_obs_grid
+file_name = "observasi_plot.png"
+plot_title = "Peta Anomali Magnetik Observasi"
+
+if plot_choice == "Regional":
+    data_to_save = Z_regional_grid
+    file_name = "regional_plot.png"
+    plot_title = "Peta Anomali Magnetik Regional"
+elif plot_choice == "Residual":
+    data_to_save = Z_residual_grid
+    file_name = "residual_plot.png"
+    plot_title = "Peta Anomali Magnetik Residual"
+
+# Buat figure untuk di-download
+download_fig = create_download_figure(data_to_save, plot_title, 
+                                        selected_cmap, vmin_val, vmax_val)
+
+# Simpan figure ke buffer memori
+from io import BytesIO
+buffer = BytesIO()
+download_fig.savefig(buffer, format="png")
+plt.close(download_fig) 
+
+st.download_button(
+    label=f"💾 Download Plot {plot_choice}",
+    data=buffer.getvalue(),
+    file_name=file_name,
+    mime="image/png"
+)
+st.caption("*Catatan: Untuk Challenge 4, hanya opsi menyimpan plot yang diimplementasikan.*")
+st.caption("**Asumsi:** Nilai Anomali = $t_{obs} - 45000$. Pemisahan Regional/Residual dilakukan dengan *Gaussian Filter* sederhana.")
